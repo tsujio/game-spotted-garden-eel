@@ -108,14 +108,6 @@ type point struct {
 	x, y float64
 }
 
-type gameMode int
-
-const (
-	gameModeTitle gameMode = iota
-	gameModePlaying
-	gameModeGameOver
-)
-
 type plankton struct {
 	*point
 	swimVec *point
@@ -157,6 +149,24 @@ type flowLine struct {
 	depth float64
 }
 
+type eatEffect struct {
+	*point
+	ticks uint
+}
+
+func (e *eatEffect) draw(screen *ebiten.Image, game *Game) {
+	y := e.y - 15*math.Sin(math.Pi*float64(e.ticks)/60)
+	text.Draw(screen, "+1", mediumFont.Face, int(e.x), int(y), color.RGBA{0xf5, 0xc0, 0x01, 0xff})
+}
+
+type gameMode int
+
+const (
+	gameModeTitle gameMode = iota
+	gameModePlaying
+	gameModeGameOver
+)
+
 type Game struct {
 	playID             string
 	mode               gameMode
@@ -169,6 +179,7 @@ type Game struct {
 	planktons          []plankton
 	sunfishes          []sunfish
 	flowLines          []flowLine
+	eatEffects         []eatEffect
 	score              int
 }
 
@@ -333,6 +344,18 @@ func (g *Game) Update() error {
 		}
 		g.sunfishes = newSunfishes
 
+		// Eat effect
+		var newEatEffects []eatEffect
+		for i := 0; i < len(g.eatEffects); i++ {
+			e := &g.eatEffects[i]
+			e.ticks++
+			if e.ticks > 60 {
+				continue
+			}
+			newEatEffects = append(newEatEffects, *e)
+		}
+		g.eatEffects = newEatEffects
+
 		// sge and plankton collision
 		newPlanktons = []plankton{}
 		for i := 0; i < len(g.planktons); i++ {
@@ -349,6 +372,10 @@ func (g *Game) Update() error {
 				if math.Abs(sgeX+xOffset-p.x) < 10 {
 					g.score++
 					g.sgeEatingTicks = 1
+					g.eatEffects = append(g.eatEffects, eatEffect{
+						point: &point{x: sgeX, y: seaBottom - g.sgeLength},
+						ticks: 0,
+					})
 
 					audio.NewPlayerFromBytes(audioContext, eatAudioData).Play()
 
@@ -529,6 +556,12 @@ func (g *Game) drawSunfishes(screen *ebiten.Image) {
 	}
 }
 
+func (g *Game) drawEatEffects(screen *ebiten.Image) {
+	for i := 0; i < len(g.eatEffects); i++ {
+		g.eatEffects[i].draw(screen, g)
+	}
+}
+
 func (g *Game) drawTitle(screen *ebiten.Image) {
 	titleText := []string{"SPOTTED", "GARDEN", "EEL"}
 	for i, s := range titleText {
@@ -556,7 +589,7 @@ func (g *Game) drawGameOver(screen *ebiten.Image) {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	screen.Fill(color.RGBA{0x00, 0x11, 0xcc, 0xff})
+	screen.Fill(color.RGBA{0x94, 0xd5, 0xf5, 0xff})
 
 	g.drawFlow(screen)
 
@@ -570,6 +603,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.drawSGE(screen)
 		g.drawPlanktons(screen)
 		g.drawSunfishes(screen)
+		g.drawEatEffects(screen)
 		g.drawScore(screen)
 	case gameModeGameOver:
 		g.drawSGE(screen)
