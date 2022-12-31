@@ -170,6 +170,7 @@ const (
 )
 
 type Game struct {
+	playerID           string
 	playID             string
 	mode               gameMode
 	touchContext       *touchutil.TouchContext
@@ -202,17 +203,19 @@ func (g *Game) Update() error {
 			audio.NewPlayerFromBytes(audioContext, gameStartAudioData).Play()
 
 			logging.LogAsync(gameName, map[string]interface{}{
-				"play_id": g.playID,
-				"action":  "start_game",
+				"player_id": g.playerID,
+				"play_id":   g.playID,
+				"action":    "start_game",
 			})
 		}
 	case gameModePlaying:
 		if g.ticksFromModeStart%600 == 0 {
 			logging.LogAsync(gameName, map[string]interface{}{
-				"play_id": g.playID,
-				"action":  "playing",
-				"ticks":   g.ticksFromModeStart,
-				"score":   g.score,
+				"player_id": g.playerID,
+				"play_id":   g.playID,
+				"action":    "playing",
+				"ticks":     g.ticksFromModeStart,
+				"score":     g.score,
 			})
 		}
 
@@ -405,10 +408,11 @@ func (g *Game) Update() error {
 					audio.NewPlayerFromBytes(audioContext, gameOverAudioData).Play()
 
 					logging.LogAsync(gameName, map[string]interface{}{
-						"play_id": g.playID,
-						"action":  "game_over",
-						"ticks":   g.ticksFromModeStart,
-						"score":   g.score,
+						"player_id": g.playerID,
+						"play_id":   g.playID,
+						"action":    "game_over",
+						"ticks":     g.ticksFromModeStart,
+						"score":     g.score,
 					})
 
 					break
@@ -622,8 +626,9 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 
 func (g *Game) initialize() {
 	logging.LogAsync(gameName, map[string]interface{}{
-		"play_id": g.playID,
-		"action":  "initialize",
+		"player_id": g.playerID,
+		"play_id":   g.playID,
+		"action":    "initialize",
 	})
 
 	g.mode = gameModeTitle
@@ -667,6 +672,12 @@ func main() {
 	} else {
 		rand.Seed(time.Now().Unix())
 	}
+	playerID := os.Getenv("GAME_PLAYER_ID")
+	if playerID == "" {
+		if playerIDObj, err := uuid.NewRandom(); err == nil {
+			playerID = playerIDObj.String()
+		}
+	}
 
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Spotted Garden Eel")
@@ -680,6 +691,7 @@ func main() {
 	}
 
 	game := &Game{
+		playerID:     playerID,
 		playID:       playID,
 		touchContext: touchutil.CreateTouchContext(),
 	}
