@@ -2,7 +2,7 @@
 
 ![Spotted Garden Eel](https://github.com/tsujio/game-spotted-garden-eel/blob/main/image.png?raw=true)
 
-[Play](https://www.tsujio.org/games/game.html?title=spotted-garden-eel)
+[Play](https://game.tsujio.org/game.html?title=spotted-garden-eel)
 
 # Credits
 
