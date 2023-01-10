@@ -33,7 +33,7 @@ const (
 	seaBottom     = screenHeight - 50
 )
 
-//go:embed resources/*.ttf resources/*.png resources/*.dat
+//go:embed resources/*.ttf resources/*.png resources/*.dat resources/secret
 var resources embed.FS
 
 func loadImage(filename string) *ebiten.Image {
@@ -664,9 +664,15 @@ func (g *Game) initialize() {
 }
 
 func main() {
-	if os.Getenv("GAME_LOGGING") != "1" {
+	if os.Getenv("GAME_LOGGING") == "1" {
+		secret, err := resources.ReadFile("resources/secret")
+		if err == nil {
+			logging.Enable(string(secret))
+		}
+	} else {
 		logging.Disable()
 	}
+
 	if seed, err := strconv.Atoi(os.Getenv("GAME_RAND_SEED")); err == nil {
 		rand.Seed(int64(seed))
 	} else {
